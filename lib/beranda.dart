@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Halaman_Utama extends StatefulWidget {
   const Halaman_Utama({super.key});
@@ -17,26 +20,103 @@ class _Halaman_UtamaState extends State<Halaman_Utama> {
   String? _selectedProdi;
   String _jenisKelamin = 'Pria';
 
+  // Ini variabel tempat menyimpan data entri-form yang sedang ditampilkan di layar (ListView).
+  List<Map<String, dynamic>> _items = [];
+  static const String _prefsKey = 'submissions';
+
+ 
+  @override
+  void initState() {
+    super.initState();
+    _loadSaved();
+  }
+
+  // membersihkan (release) resource yang tidak otomatis dibuang oleh Dart/Flutter agar tidak terjadi memory leak.
   @override
   void dispose() {
     _namaController.dispose();
+    _alamatController.dispose();
+    _npmController.dispose();
     super.dispose();
   }
 
-  void _showModal() {
+  // memuat (read) data yang sebelumnya disimpan supaya ListView di UI bisa menampilkan data itu.
+  Future<void> _loadSaved() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String>? raw = prefs.getStringList(_prefsKey);
+    if (raw != null) {
+      setState(() {
+        _items = raw.map((s) => jsonDecode(s) as Map<String, dynamic>).toList();
+      });
+    }
+  }
+
+  // bertugas menyimpan semua entri _items ke penyimpanan lokal (SharedPreferences)
+  Future<void> _saveAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> raw = _items.map((m) => jsonEncode(m)).toList();
+    await prefs.setStringList(_prefsKey, raw);
+  }
+
+
+  void _addItem() {
     final nama = _namaController.text.trim();
     final alamat = _alamatController.text.trim();
     final npm = _npmController.text.trim();
-    final kelas = _selectedKelas ?? '-';
-    final prodi = _selectedProdi ?? '-';
-    final jk = _jenisKelamin;
 
+    if (nama.isEmpty || npm.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nama dan NPM wajib diisi')),
+      );
+      return;
+    }
+
+    final item = {
+      'nama': nama,
+      'alamat': alamat,
+      'npm': npm,
+      'kelas': _selectedKelas ?? '-',
+      'prodi': _selectedProdi ?? '-',
+      'jk': _jenisKelamin,
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+
+    setState(() {
+      _items.insert(0, item);
+    });
+
+    _saveAll();
+
+    _namaController.clear();
+    _alamatController.clear();
+    _npmController.clear();
+    setState(() {
+      _selectedKelas = null;
+      _selectedProdi = null;
+      _jenisKelamin = 'Pria';
+    });
+  }
+
+  Future<void> _removeItem(int index) async {
+    setState(() {
+      _items.removeAt(index);
+    });
+    await _saveAll();
+  }
+
+  void _showDetail(Map<String, dynamic> item) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Data'),
+        title: const Text('Detail'),
         content: Text(
-          'Nama: $nama\nALamat: $alamat\nNPM: $npm\nKelas :$kelas\nProdi :$prodi\nJenis Kelamin: $jk',
+          'Nama: ${item['nama']}\n'
+          'Alamat: ${item['alamat']}\n'
+          'NPM: ${item['npm']}\n'
+          'Kelas: ${item['kelas']}\n'
+          'Prodi: ${item['prodi']}\n'
+          'Jenis Kelamin: ${item['jk']}\n'
+          'Waktu: ${item['createdAt']}',
         ),
         actions: [
           TextButton(
@@ -137,12 +217,43 @@ class _Halaman_UtamaState extends State<Halaman_Utama> {
               ],
             ),
             const Spacer(),
-            SizedBox(
+           SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _showModal,
+                // mengirim ke _addItem
+                onPressed: _addItem,
                 child: const Text('Submit'),
               ),
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            // List area
+            Expanded(
+              child: _items.isEmpty
+                  ? const Center(child: Text('Belum ada data'))
+                  : ListView.builder(
+                      itemCount: _items.length,
+                      itemBuilder: (context, index) {
+                        final item = _items[index];
+                        return Dismissible(
+                          key: Key(item['createdAt'] ?? index.toString()),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: const Icon(Icons.delete),
+                          ),
+                          onDismissed: (_) => _removeItem(index),
+                          child: ListTile(
+                            title: Text(item['nama'] ?? '-'),
+                            subtitle:
+                                Text('${item['npm'] ?? '-'} • ${item['prodi'] ?? '-'}'),
+                            trailing: Text(item['kelas'] ?? '-'),
+                            onTap: () => _showDetail(item),
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
