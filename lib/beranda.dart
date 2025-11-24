@@ -9,8 +9,11 @@ class Halaman_Utama extends StatefulWidget {
 
 class _Halaman_UtamaState extends State<Halaman_Utama> {
   final TextEditingController _namaController = TextEditingController();
-   final TextEditingController _alamatController = TextEditingController();
+  final TextEditingController _alamatController = TextEditingController();
+  final TextEditingController _npmController = TextEditingController();
   final List<String> _prodiList = ['Informatika', 'Mesin', 'Sipil', 'Arsitek'];
+  final List<String> _kelasList = ['A', 'B', 'C', 'D', 'E'];
+  String? _selectedKelas;
   String? _selectedProdi;
   String _jenisKelamin = 'Pria';
 
@@ -23,6 +26,8 @@ class _Halaman_UtamaState extends State<Halaman_Utama> {
   void _showModal() {
     final nama = _namaController.text.trim();
     final alamat = _alamatController.text.trim();
+    final npm = _npmController.text.trim();
+    final kelas = _selectedKelas ?? '-';
     final prodi = _selectedProdi ?? '-';
     final jk = _jenisKelamin;
 
@@ -30,7 +35,9 @@ class _Halaman_UtamaState extends State<Halaman_Utama> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Data'),
-        content: Text('Nama: $nama\nALamat: $alamat\n $prodi\nJenis Kelamin: $jk'),
+        content: Text(
+          'Nama: $nama\nALamat: $alamat\nNPM: $npm\nKelas :$kelas\nProdi :$prodi\nJenis Kelamin: $jk',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -51,18 +58,54 @@ class _Halaman_UtamaState extends State<Halaman_Utama> {
           children: [
             TextField(
               controller: _namaController,
-              decoration: const InputDecoration(labelText: 'Nama', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: 'Nama',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 12),
-             TextField(
+            TextField(
               controller: _alamatController,
-              decoration: const InputDecoration(labelText: 'Alamat', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: 'Alamat',
+                border: OutlineInputBorder(),
+              ),
             ),
-            DropdownButton<String>(
+            const SizedBox(height: 12),
+            TextField(
+              controller: _npmController,
+              decoration: const InputDecoration(
+                labelText: 'NPM',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              hint: const Text('Pilih Kelas'),
+              decoration: const InputDecoration(
+                labelText: 'Kelas',
+                border: OutlineInputBorder(),
+              ),
+              value: _selectedKelas,
+
+              items: _kelasList
+                  .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                  .toList(),
+              onChanged: (v) => setState(() => _selectedKelas = v),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
               isExpanded: true,
               hint: const Text('Pilih Prodi'),
+              decoration: const InputDecoration(
+                labelText: 'Prodi',
+                border: OutlineInputBorder(),
+              ),
               value: _selectedProdi,
-              items: _prodiList.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
+              items: _prodiList
+                  .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                  .toList(),
               onChanged: (v) => setState(() => _selectedProdi = v),
             ),
             const SizedBox(height: 12),
