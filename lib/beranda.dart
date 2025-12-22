@@ -223,7 +223,7 @@ class _Halaman_UtamaState extends State<Halaman_Utama> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 25),
             TextField(
               controller: _alamatController,
               decoration: const InputDecoration(
